@@ -1,5 +1,5 @@
 Metadata-Version: 2.1
-Name: Customer_Personality_Analysis
+Name: Customer-Personality-Analysis
 Version: 0.0.1
 Author: Piyush Chaudhari
 Author-email: piyushpchaudhari@gamil.com
@@ -7,3 +7,6 @@ Requires-Dist: pandas
 Requires-Dist: numpy
 Requires-Dist: seaborn
 Requires-Dist: stats
+Requires-Dist: scikit-learn
+Requires-Dist: dill
+Requires-Dist: openpyxl

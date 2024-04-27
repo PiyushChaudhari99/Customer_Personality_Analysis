@@ -1,6 +1,6 @@
 import logging
 import sys
-sys.append.path("")
+
 import os
 from datetime import datetime
 

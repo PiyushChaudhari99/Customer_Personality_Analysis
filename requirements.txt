@@ -2,4 +2,7 @@ pandas
 numpy
 seaborn 
 stats
+scikit-learn
+dill
+openpyxl
 -e .
