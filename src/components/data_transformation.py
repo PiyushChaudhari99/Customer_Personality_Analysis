@@ -1,41 +1,38 @@
-import os
 import sys
 from dataclasses import dataclass
-from src.logger import logging
-from src.exception import CustomException
-from src.utils import save_object
 
-
-import numpy as np
+import numpy as np 
 import pandas as pd
-from sklearn.preprocessing import StandardScaler,OneHotEncoder,LabelEncoder
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import OneHotEncoder,StandardScaler
+from sklearn.feature_selection import RFE
+from sklearn.ensemble import RandomForestRegressor
+
+from src.exception import CustomException
+from src.logger import logging
+import os
+
+from src.utils import save_object
 
 
 
 @dataclass
 class DataTransformationConfig:
-     preprocessor_obj_file_path = os.path.join('artifacts','preprocessor.pkl')
+    preprocessor_obj_file_path=os.path.join('artifacts',"proprocessor.pkl")
 
 class DataTransformation:
     def __init__(self):
-        self.data_transformation_config = DataTransformationConfig()
+        self.data_transformation_config=DataTransformationConfig()
 
 
     def get_data_transformer_object(self):
         try:
-            numerical_columns = ['Year_Birth', 'Income', 'Kidhome',
-       'Teenhome', 'Recency', 'MntWines', 'MntFruits',
-       'MntMeatProducts', 'MntFishProducts', 'MntSweetProducts',
-       'MntGoldProds', 'NumDealsPurchases', 'NumWebPurchases',
-       'NumCatalogPurchases', 'NumStorePurchases', 'NumWebVisitsMonth']
+            numerical_columns = [ 'Income', 'Amount_Spent', 'Children', 'Customer_Age','Total_Purchases','TotalAcceptedCmp']
             
 
-            categorical_columns = ['Education', 'Marital_Status', 
-       'AcceptedCmp3', 'AcceptedCmp4', 'AcceptedCmp5', 'AcceptedCmp1',
-       'AcceptedCmp2', 'Complain', 'Response']
+            categorical_columns = ['Education', 'Living_With','Family_Size']
 
 
             num_pipeline= Pipeline(
@@ -84,7 +81,8 @@ class DataTransformation:
 
             logging.info("Obtaining preprocessing object")
 
-            #Reducing the nmber of columns by merging different columns
+
+            # Reducing the nmber of columns by merging different columns in train data
             train_df['Amount_Spent'] = train_df['MntWines'] + train_df['MntFruits'] + train_df['MntMeatProducts'] + train_df['MntFishProducts'] + train_df['MntSweetProducts'] + train_df['MntGoldProds']
             train_df['Living_With'] = train_df['Marital_Status'].replace({'Married':'Partner', 'Together':'Partner', 'Absurd':'Alone', 'Widow':'Alone', 'YOLO':'Alone', 'Divorced':'Alone', 'Single':'Alone'})
             train_df['Children'] = train_df['Kidhome'] + train_df['Teenhome']
@@ -93,12 +91,20 @@ class DataTransformation:
             train_df['Customer_Age'] = (pd.Timestamp('now').year) - train_df['Year_Birth']
             train_df['Total_Purchases'] = train_df['NumWebPurchases'] + train_df['NumCatalogPurchases'] + train_df['NumStorePurchases'] + train_df['NumDealsPurchases']
             train_df['TotalAcceptedCmp'] = train_df['AcceptedCmp1'] + train_df['AcceptedCmp2'] + train_df['AcceptedCmp3'] + train_df['AcceptedCmp4'] + train_df['AcceptedCmp5']
-            train_df=train_df.drop(columns=["Year_Birth","Marital_Status","ID","AcceptedCmp1" , "AcceptedCmp2", "AcceptedCmp3" , "AcceptedCmp4","AcceptedCmp5","NumWebVisitsMonth", "NumWebPurchases","NumCatalogPurchases","NumStorePurchases","NumDealsPurchases" , "Kidhome", "Teenhome","MntWines", "MntFruits", "MntMeatProducts", "MntFishProducts", "MntSweetProducts", "MntGoldProds",'Dt_Customer','Recency','Complain','Response'],axis=1)
+            train_df=train_df.drop(columns=["Year_Birth","Marital_Status","ID","AcceptedCmp1" , "AcceptedCmp2", "AcceptedCmp3" , "AcceptedCmp4","AcceptedCmp5","NumWebVisitsMonth", "NumWebPurchases","NumCatalogPurchases","NumStorePurchases","NumDealsPurchases" , "Kidhome", "Teenhome","MntWines", "MntFruits", "MntMeatProducts", "MntFishProducts", "MntSweetProducts", "MntGoldProds",'Dt_Customer','Recency','Complain','Response','Z_CostContact', 'Z_Revenue'],axis=1)
             
-            print(train_df)
-            
-            preprocessing_obj=self.get_data_transformer_object()
+            # Reducing the nmber of columns by merging different columns in test data
+            test_df['Amount_Spent'] =  test_df['MntWines'] + test_df['MntFruits'] + test_df['MntMeatProducts'] + test_df['MntFishProducts'] + test_df['MntSweetProducts'] + test_df['MntGoldProds']
+            test_df['Living_With'] = test_df['Marital_Status'].replace({'Married':'Partner', 'Together':'Partner', 'Absurd':'Alone', 'Widow':'Alone', 'YOLO':'Alone', 'Divorced':'Alone', 'Single':'Alone'})
+            test_df['Children'] = test_df['Kidhome'] + test_df['Teenhome']
+            test_df['Family_Size'] = test_df['Living_With'].replace({'Alone': 1, 'Partner':2}) + test_df['Children']
+            test_df['Education'] = test_df['Education'].replace({'Basic':'Undergraduate', '2n Cycle':'Undergraduate', 'Graduation':'Graduate', 'Master':'Postgraduate', 'PhD':'Postgraduate'})
+            test_df['Customer_Age'] = (pd.Timestamp('now').year) - test_df['Year_Birth']
+            test_df['Total_Purchases'] = test_df['NumWebPurchases'] + test_df['NumCatalogPurchases'] + test_df['NumStorePurchases'] + test_df['NumDealsPurchases']
+            test_df['TotalAcceptedCmp'] = test_df['AcceptedCmp1'] + test_df['AcceptedCmp2'] + test_df['AcceptedCmp3'] + test_df['AcceptedCmp4'] + test_df['AcceptedCmp5']
+            test_df=test_df.drop(columns=["Year_Birth","Marital_Status","ID","AcceptedCmp1" , "AcceptedCmp2", "AcceptedCmp3" , "AcceptedCmp4","AcceptedCmp5","NumWebVisitsMonth", "NumWebPurchases","NumCatalogPurchases","NumStorePurchases","NumDealsPurchases" , "Kidhome", "Teenhome","MntWines", "MntFruits", "MntMeatProducts", "MntFishProducts", "MntSweetProducts", "MntGoldProds",'Dt_Customer','Recency','Complain','Response','Z_CostContact', 'Z_Revenue'],axis=1)
 
+            preprocessing_obj=self.get_data_transformer_object()
 
             logging.info(
                 f"Applying preprocessing object on training dataframe and testing dataframe."
@@ -107,12 +113,18 @@ class DataTransformation:
             input_feature_train_arr=preprocessing_obj.fit_transform(train_df)
             input_feature_test_arr=preprocessing_obj.transform(test_df)
 
+            logging.info(f"preprocessing of the input feature done.")
+
             train_arr = np.c_[
                 input_feature_train_arr, np.array(train_df)
             ]
             test_arr = np.c_[input_feature_test_arr, np.array(test_df)]
 
+
             logging.info(f"Saved preprocessing object.")
+
+            print(train_arr)
+            print(test_arr)
 
             save_object(
 
