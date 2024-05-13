@@ -5,4 +5,5 @@ stats
 scikit-learn
 dill
 openpyxl
+pickle
 -e .
